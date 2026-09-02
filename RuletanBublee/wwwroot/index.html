@@ -29,12 +29,20 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
+            padding: 20px;
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
             text-align: center;
-            max-width: 480px; /* Ampliado para la nueva ruleta */
+            max-width: 480px;
             width: 100%;
+        }
+
+        .roulette-container {
+            position: relative;
+            width: 100%;
+            max-width: 280px; /* Se adapta dinámicamente en celulares */
+            aspect-ratio: 1 / 1; /* Mantiene la forma circular perfecta */
+            margin: 0 auto 20px auto;
         }
 
         h1 {
