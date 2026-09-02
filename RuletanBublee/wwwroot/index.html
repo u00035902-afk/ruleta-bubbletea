@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruleta de Premios - Bubble Tea & Alfajores</title>
+    <!-- Google Fonts para un diseño moderno -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #2b1055, #7597de);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 480px; /* Ampliado para la nueva ruleta */
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            color: #ffceed;
+        }
+
+        p {
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+
+        .roulette-container {
+            position: relative;
+            width: 400px; /* Actualizado a 400px como pediste */
+            height: 400px; /* Actualizado a 400px como pediste */
+            margin: 0 auto 20px auto;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 4s cubic-bezier(0.15, 0.9, 0.2, 1);
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid #ff4757;
+            z-index: 10;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        }
+
+        button {
+            background: linear-gradient(135deg, #ff758c, #ff7eb3);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 117, 140, 0.4);
+            transition: transform 0.2s, background 0.2s;
+            width: 100%;
+        }
+
+            button:active {
+                transform: scale(0.95);
+            }
+
+            button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
+        #result-modal {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            min-height: 40px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .win {
+            background: rgba(46, 213, 115, 0.2);
+            border: 1px solid #2ed573;
+            color: #7efff5;
+        }
+
+        .try-again {
+            background: rgba(255, 71, 87, 0.2);
+            border: 1px solid #ff4757;
+            color: #ff6b81;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Bubble Tea & Alfajores</h1>
+        <p>¡Gira la ruleta y gana premios instantáneos!</p>
+
+        <div class="roulette-container">
+            <div class="pointer"></div>
+            <!-- Canvas configurado en resolución 400x400 para que coincida perfectamente -->
+            <canvas id="wheel" width="400" height="400"></canvas>
+        </div>
+
+        <button id="spin-btn" onclick="girarRuleta()">¡GIRAR RULETA!</button>
+
+        <div id="result-modal"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const premioText = document.getElementById('result-modal');
+        const spinBtn = document.getElementById('spin-btn');
+
+        const slots = [
+            { nombre: "Bebida Gratis", imgSrc: "img/bebida.jpg" },
+            { nombre: "Sigue intentando", imgSrc: "img/pina.jpg" },
+            { nombre: "Descuento 15%", imgSrc: "img/descuento30.jpg" },
+            { nombre: "Sigue intentando", imgSrc: "img/pina.jpg" },
+            { nombre: "Bebida Gratis", imgSrc: "img/bebida2.jpg" },
+            { nombre: "Descuento 15%", imgSrc: "img/descuento50.jpg" }
+        ];
+
+        const colores = ["#ff7675", "#74b9ff", "#ffeaa7", "#55efc4", "#a29bfe", "#fab1a0"];
+        const arc = Math.PI / (slots.length / 2);
+        let anguloActual = 0;
+
+        const imagenesCargadas = {};
+        let imagenesPendientes = 0;
+
+        slots.forEach(slot => {
+            if (!imagenesCargadas[slot.imgSrc]) {
+                imagenesPendientes++;
+                const img = new Image();
+                img.src = slot.imgSrc;
+                img.onload = () => {
+                    imagenesPendientes--;
+                    if (imagenesPendientes === 0) dibujarRuleta();
+                };
+                img.onerror = () => {
+                    imagenesPendientes--;
+                    console.warn("No se pudo cargar la imagen: " + slot.imgSrc);
+                    if (imagenesPendientes === 0) dibujarRuleta();
+                };
+                imagenesCargadas[slot.imgSrc] = img;
+            }
+        });
+
+        function dibujarRuleta() {
+            const outsideRadius = 190; // Ajustado al nuevo radio de 400px
+            const insideRadius = 0;
+            const textRadius = 125;    // Distancia ideal para centrar los iconos en los 400px
+            const center = 200;
+
+            ctx.clearRect(0, 0, 400, 400);
+
+            for (let i = 0; i < slots.length; i++) {
+                const angle = anguloActual + i * arc;
+                ctx.fillStyle = colores[i];
+                ctx.beginPath();
+                ctx.arc(center, center, outsideRadius, angle, angle + arc, false);
+                ctx.arc(center, center, insideRadius, angle + arc, angle, true);
+                ctx.stroke();
+                ctx.fill();
+
+                ctx.save();
+                ctx.translate(center + Math.cos(angle + arc / 2) * textRadius, center + Math.sin(angle + arc / 2) * textRadius);
+                ctx.rotate(angle + arc / 2 + Math.PI / 2);
+
+                const imgObj = imagenesCargadas[slots[i].imgSrc];
+                if (imgObj && imgObj.complete && imgObj.naturalWidth !== 0) {
+                    // Tamaño de la imagen dentro de la ruleta ajustado a 55x55px
+                    ctx.drawImage(imgObj, -27.5, -27.5, 55, 55);
+                } else {
+                    ctx.fillStyle = "#2d3436";
+                    ctx.font = 'bold 13px Poppins';
+                    ctx.fillText(slots[i].nombre, -ctx.measureText(slots[i].nombre).width / 2, 0);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        dibujarRuleta();
+
+
+        async function girarRuleta() {
+            spinBtn.disabled = true;
+            premioText.innerHTML = "Girando...";
+            premioText.className = "";
+
+            try {
+                const response = await fetch('/api/ruleta/girar', { method: 'POST' });
+                const data = await response.json();
+
+                // 1. Obtener el índice que envía el backend (prioridad) o buscarlo si no viene
+                let indicePremio = data.indice !== undefined
+                    ? data.indice
+                    : slots.findIndex(s => s.nombre === data.premio);
+
+                if (indicePremio === -1) indicePremio = 0;
+
+                // 2. Cálculo preciso para centrar en el slot
+                const sectorSize = 360 / slots.length;
+                const anguloTarget = (indicePremio * sectorSize) + (sectorSize / 2);
+
+                // 3. Grados a girar para que el puntero (arriba a 270 deg) coincida con el centro
+                const rotacionFinal = (360 * 5) + (270 - anguloTarget);
+
+                // Reset y Aplicación
+                canvas.style.transition = 'none';
+                canvas.style.transform = 'rotate(0deg)';
+
+                // Forzamos el reflow del DOM
+                canvas.offsetHeight;
+
+                setTimeout(() => {
+                    canvas.style.transition = 'transform 4s cubic-bezier(0.15, 0.9, 0.2, 1)';
+                    canvas.style.transform = `rotate(${rotacionFinal}deg)`;
+                }, 50);
+
+                // 4. Mostrar resultado en la interfaz
+                setTimeout(() => {
+                    if (data.premio !== "Sigue intentando") {
+                        premioText.innerHTML = `🎉 ¡FELICIDADES! Ganaste: <strong>${data.premio}</strong>`;
+                        premioText.className = "win";
+                    } else {
+                        premioText.innerHTML = `🍍 ¡Sigue intentando! Prueba otra vez en tu próxima compra.`;
+                        premioText.className = "try-again";
+                    }
+                    spinBtn.disabled = false;
+                }, 4100);
+
+            } catch (error) {
+                console.error(error);
+                alert("Error de conexión");
+                spinBtn.disabled = false;
+            }
+        }
+
+
+    </script>
+</body>
+</html>

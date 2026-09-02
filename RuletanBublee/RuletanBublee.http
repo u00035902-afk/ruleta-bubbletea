@@ -1,0 +1,6 @@
+@RuletanBublee_HostAddress = http://localhost:5263
+
+GET {{RuletanBublee_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
