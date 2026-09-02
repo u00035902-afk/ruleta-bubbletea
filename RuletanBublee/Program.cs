@@ -34,7 +34,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();//
 
 // 4. Activar CORS antes del ruteo de controladores
 app.UseCors("PermitirTodo");
